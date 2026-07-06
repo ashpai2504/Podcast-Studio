@@ -54,6 +54,32 @@ The app opens in your browser at http://localhost:8501. To share with the team o
 office network: `streamlit run app.py --server.address 0.0.0.0` and give them your
 machine's address, or host it on an internal server / Azure App Service.
 
+## Deploying to Streamlit Community Cloud
+
+This app needs a persistent Python process (not serverless functions), so it deploys to
+[share.streamlit.io](https://share.streamlit.io), not Vercel.
+
+1. Sign in at share.streamlit.io with GitHub, click **New app**, and pick this repo,
+   branch `main`, main file path `app.py`.
+2. Before (or right after) deploying, open the app's **Settings → Secrets** and paste in
+   the same values from your `.env` file, formatted as TOML:
+   ```toml
+   AZURE_OPENAI_ENDPOINT = "https://your-resource.services.ai.azure.com/"
+   AZURE_OPENAI_API_KEY = "your-key"
+   AZURE_OPENAI_DEPLOYMENT = "gpt-5-mini"
+   AZURE_OPENAI_API_VERSION = "2025-04-01-preview"
+   AZURE_SPEECH_KEY = ""
+   AZURE_SPEECH_REGION = "eastus"
+   ```
+3. Deploy. `packages.txt` and `runtime.txt` in this repo request the system libraries and
+   Python version the Azure Speech SDK needs.
+
+> If script generation works but audio synthesis fails with a shared-library error, the
+> Speech SDK's native binary is missing an OS package Community Cloud doesn't ship by
+> default — check the app logs for the missing `.so` name and add it to `packages.txt`.
+> If that turns out to be a dead end, Azure App Service / Container Apps gives full
+> control over the OS image and is the more reliable fallback for this dependency.
+
 ## Episode length
 
 By default every episode is **20–24 minutes**, scaled to how much substance the source
