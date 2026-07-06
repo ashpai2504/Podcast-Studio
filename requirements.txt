@@ -1,0 +1,8 @@
+streamlit>=1.40
+openai>=1.60
+azure-cognitiveservices-speech>=1.42
+python-dotenv>=1.0
+pypdf>=5.0
+python-docx>=1.1
+python-pptx>=1.0
+openpyxl>=3.1
