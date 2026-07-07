@@ -4,6 +4,17 @@ One tool that replaces the ChatGPT + NotebookLM workflow: upload Marketing Activ
 Reports (MARs), sales reports, decks, or pasted notes, and it generates a two-host
 podcast episode the rest of the company can listen to.
 
+This repo has two implementations of the same tool:
+
+- **This root** — the original **Streamlit** app (Python). Deploys to Streamlit
+  Community Cloud or Azure App Service. See below for setup.
+- **[`web/`](web/)** — a **Next.js/TypeScript** rewrite built specifically to run on
+  **Vercel**, for orgs (like Hunter's) that block Streamlit's domain on the corporate
+  network. See [`web/README.md`](web/README.md) for how it's architected and deployed.
+
+Both hit the same Azure OpenAI + Azure Speech resources and produce the same style of
+episode; pick whichever hosting option your network allows.
+
 **How it works**
 
 1. **Upload** PDFs, Word docs, PowerPoints, Excel MAR exports, or paste raw text.
