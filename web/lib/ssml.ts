@@ -11,6 +11,34 @@ function escapeXml(text: string): string {
     .replace(/'/g, "&apos;");
 }
 
+// Words the model spells normally but the voice mispronounces. Each alias is a
+// phonetic respelling the TTS engine reads using normal English pronunciation
+// rules (via SSML <sub>), not IPA - easy to tweak by ear without any code
+// changes elsewhere.
+const PRONUNCIATIONS: [RegExp, string][] = [[/\bcentralus\b/gi, "sen-TRAWL-iss"]];
+
+/** Escape text for SSML, splicing in <sub> aliases for known mispronunciations. */
+function applyPronunciations(text: string): string {
+  const spans: { start: number; end: number; alias: string }[] = [];
+  for (const [pattern, alias] of PRONUNCIATIONS) {
+    for (const match of text.matchAll(pattern)) {
+      spans.push({ start: match.index!, end: match.index! + match[0].length, alias });
+    }
+  }
+  spans.sort((a, b) => a.start - b.start);
+
+  const pieces: string[] = [];
+  let last = 0;
+  for (const { start, end, alias } of spans) {
+    if (start < last) continue; // overlapping match, keep the earlier one
+    pieces.push(escapeXml(text.slice(last, start)));
+    pieces.push(`<sub alias="${escapeXml(alias)}">${escapeXml(text.slice(start, end))}</sub>`);
+    last = end;
+  }
+  pieces.push(escapeXml(text.slice(last)));
+  return pieces.join("");
+}
+
 /** Split the dialogue into groups of turns that each fit in one synthesis request. */
 export function chunkTurns(turns: Turn[], maxChars: number = MAX_CHARS_PER_REQUEST): Turn[][] {
   const chunks: Turn[][] = [];
@@ -35,7 +63,7 @@ export function buildSsml(turns: Turn[], pair: VoicePair): string {
   const turnElements = turns
     .map(
       (t) =>
-        `      <mstts:turn speaker="${speakerIds[t.speaker]}">${escapeXml(t.text)}</mstts:turn>`
+        `      <mstts:turn speaker="${speakerIds[t.speaker]}">${applyPronunciations(t.text)}</mstts:turn>`
     )
     .join("\n");
   return (

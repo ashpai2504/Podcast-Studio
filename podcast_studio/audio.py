@@ -1,10 +1,40 @@
 """Turn a dialogue script into podcast audio with Azure Speech multi-talker HD voices."""
 
+import re
 from xml.sax.saxutils import escape
 
 import azure.cognitiveservices.speech as speechsdk
 
 from .config import Settings
+
+# Words the model spells normally but the voice mispronounces. Each alias is a
+# phonetic respelling the TTS engine reads using normal English pronunciation
+# rules (via SSML <sub>), not IPA - easy to tweak by ear without any code
+# changes elsewhere.
+PRONUNCIATIONS = {
+    re.compile(r"\bcentralus\b", re.IGNORECASE): "sen-TRAWL-iss",
+}
+
+
+def _apply_pronunciations(text: str) -> str:
+    """Escape text for SSML, splicing in <sub> aliases for known mispronunciations."""
+    spans = []
+    for pattern in PRONUNCIATIONS:
+        for match in pattern.finditer(text):
+            spans.append((match.start(), match.end(), pattern))
+    spans.sort()
+
+    pieces = []
+    last = 0
+    for start, end, pattern in spans:
+        if start < last:
+            continue  # overlapping match, keep the earlier one
+        pieces.append(escape(text[last:start]))
+        alias = PRONUNCIATIONS[pattern]
+        pieces.append(f'<sub alias="{escape(alias)}">{escape(text[start:end])}</sub>')
+        last = end
+    pieces.append(escape(text[last:]))
+    return "".join(pieces)
 
 # Multi-talker DragonHD voices synthesize a whole two-person dialogue in one call,
 # keeping tone and pacing coherent across speaker transitions.
@@ -111,7 +141,7 @@ def _chunk_turns(turns: list[dict]) -> list[list[dict]]:
 def _build_ssml(turns: list[dict], pair: dict) -> str:
     speaker_ids = {"host1": pair["speakers"][0], "host2": pair["speakers"][1]}
     turn_elements = "\n".join(
-        f'      <mstts:turn speaker="{speaker_ids[t["speaker"]]}">{escape(t["text"])}</mstts:turn>'
+        f'      <mstts:turn speaker="{speaker_ids[t["speaker"]]}">{_apply_pronunciations(t["text"])}</mstts:turn>'
         for t in turns
     )
     return (
