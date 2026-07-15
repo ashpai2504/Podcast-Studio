@@ -8,7 +8,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from podcast_studio.audio import VOICE_PAIRS, synthesize_podcast
+from podcast_studio.audio import INDIVIDUAL_VOICES, MULTI_TALKER_PAIRS, synthesize_podcast
 from podcast_studio.config import Settings
 from podcast_studio.extractors import extract_text
 from podcast_studio.script_writer import (
@@ -151,15 +151,15 @@ def file_icon(filename: str) -> str:
     return FILE_ICONS.get(Path(filename).suffix.lower(), "📄")
 
 
-def get_voice_preview(voice_pair_name: str, host1_name: str, host2_name: str) -> bytes:
+def get_voice_preview(voice_selection, host1_name: str, host2_name: str) -> bytes:
     cache = st.session_state.setdefault("voice_previews", {})
-    if voice_pair_name not in cache:
+    if voice_selection not in cache:
         turns = [
             {"speaker": "host1", "text": PREVIEW_LINES["host1"].format(name=host1_name)},
             {"speaker": "host2", "text": PREVIEW_LINES["host2"].format(name=host2_name)},
         ]
-        cache[voice_pair_name] = synthesize_podcast(settings, turns, voice_pair_name)
-    return cache[voice_pair_name]
+        cache[voice_selection] = synthesize_podcast(settings, turns, voice_selection)
+    return cache[voice_selection]
 
 
 # --- Sidebar: configuration -------------------------------------------------
@@ -176,8 +176,38 @@ with st.sidebar:
         target_minutes = st.slider("Target length (minutes)", 3, 30, 22)
 
     st.divider()
-    voice_pair_name = st.selectbox("Host voices", list(VOICE_PAIRS.keys()))
-    host1_name, host2_name = VOICE_PAIRS[voice_pair_name]["display"]
+    voice_mode = st.radio(
+        "Host voices",
+        ["Multi-talker pair (smoothest)", "Mix your own hosts"],
+        help="Multi-talker pairs use Azure's special dialog voice for the most natural "
+        "back-and-forth. Mixing your own gives more personality choices to pick from, "
+        "with slightly less seamless transitions between hosts.",
+    )
+    if voice_mode == "Multi-talker pair (smoothest)":
+        voice_pair_name = st.selectbox("Voice pair", list(MULTI_TALKER_PAIRS.keys()))
+        voice_selection = voice_pair_name
+        host1_name, host2_name = MULTI_TALKER_PAIRS[voice_pair_name]["display"]
+    else:
+        voice_ids = list(INDIVIDUAL_VOICES.keys())
+
+        def _voice_label(voice_id: str) -> str:
+            v = INDIVIDUAL_VOICES[voice_id]
+            return f"{v['display']} — {v['vibe']}"
+
+        col_h1, col_h2 = st.columns(2)
+        host1_id = col_h1.selectbox(
+            "Host 1 voice", voice_ids, format_func=_voice_label, key="host1_voice_id"
+        )
+        host2_id = col_h2.selectbox(
+            "Host 2 voice", voice_ids, format_func=_voice_label, index=1, key="host2_voice_id"
+        )
+        voice_selection = (host1_id, host2_id)
+        host1_name, host2_name = (
+            INDIVIDUAL_VOICES[host1_id]["display"],
+            INDIVIDUAL_VOICES[host2_id]["display"],
+        )
+        if host1_id == host2_id:
+            st.caption("⚠️ Both hosts are using the same voice — still works, but they'll sound identical.")
     st.caption(f"Your hosts: **{host1_name}** and **{host2_name}**")
 
     if st.button(
@@ -188,7 +218,7 @@ with st.sidebar:
         with st.spinner("Generating a short voice sample..."):
             try:
                 st.audio(
-                    get_voice_preview(voice_pair_name, host1_name, host2_name),
+                    get_voice_preview(voice_selection, host1_name, host2_name),
                     format="audio/mp3",
                 )
             except Exception as exc:
@@ -371,7 +401,7 @@ if "script_text" in st.session_state:
 
                 try:
                     audio = synthesize_podcast(
-                        settings, turns, voice_pair_name, progress_callback=on_progress
+                        settings, turns, voice_selection, progress_callback=on_progress
                     )
                     st.session_state["audio"] = audio
                     progress.empty()

@@ -6,7 +6,15 @@ import { computeLengthTarget, mentionsLength, wordCount } from "@/lib/scriptProm
 import { editableTextToTurns, turnsToEditableText } from "@/lib/scriptText";
 import { chunkTurns } from "@/lib/ssml";
 import type { Script, Turn } from "@/lib/types";
-import { DEFAULT_VOICE_PAIR, VOICE_PAIRS } from "@/lib/voices";
+import {
+  DEFAULT_VOICE_PAIR,
+  INDIVIDUAL_VOICES,
+  MULTI_TALKER_PAIRS,
+  resolveHostNames,
+  type VoiceSelection,
+} from "@/lib/voices";
+
+const INDIVIDUAL_VOICE_IDS = Object.keys(INDIVIDUAL_VOICES);
 
 const ACCEPTED_EXTENSIONS = ".pdf,.docx,.pptx,.xlsx,.xlsm,.txt,.md,.csv,.json";
 
@@ -50,7 +58,10 @@ export default function Home() {
   // --- Episode settings ---
   const [lengthMode, setLengthMode] = useState<"standard" | "custom">("standard");
   const [customMinutes, setCustomMinutes] = useState(22);
+  const [voiceMode, setVoiceMode] = useState<"multitalker" | "individual">("multitalker");
   const [voicePairName, setVoicePairName] = useState(DEFAULT_VOICE_PAIR);
+  const [host1VoiceId, setHost1VoiceId] = useState(INDIVIDUAL_VOICE_IDS[0]);
+  const [host2VoiceId, setHost2VoiceId] = useState(INDIVIDUAL_VOICE_IDS[1]);
   const [previewState, setPreviewState] = useState<"idle" | "loading" | "error">("idle");
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
 
@@ -69,8 +80,13 @@ export default function Home() {
   const [audioError, setAudioError] = useState<string | null>(null);
 
   const targetMinutes = lengthMode === "standard" ? null : customMinutes;
-  const pair = VOICE_PAIRS[voicePairName];
-  const [host1Name, host2Name] = pair.display;
+  const voiceSelection: VoiceSelection =
+    voiceMode === "individual"
+      ? { mode: "individual", host1Id: host1VoiceId, host2Id: host2VoiceId }
+      : { mode: "multitalker", pairName: voicePairName };
+  const voiceSelectionKey =
+    voiceMode === "individual" ? `individual:${host1VoiceId}:${host2VoiceId}` : `multitalker:${voicePairName}`;
+  const [host1Name, host2Name] = resolveHostNames(voiceSelection);
 
   const sourceParts = [
     ...uploaded
@@ -109,7 +125,7 @@ export default function Home() {
   }
 
   async function handlePreviewVoice() {
-    if (previewUrls[voicePairName]) return;
+    if (previewUrls[voiceSelectionKey]) return;
     setPreviewState("loading");
     try {
       const previewTurns: Turn[] = [
@@ -119,7 +135,7 @@ export default function Home() {
       const res = await fetch("/api/audio/synthesize-chunk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ turns: previewTurns, voicePairName }),
+        body: JSON.stringify({ turns: previewTurns, voiceSelection }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -127,7 +143,7 @@ export default function Home() {
       }
       const buf = await res.arrayBuffer();
       const url = URL.createObjectURL(new Blob([buf], { type: "audio/mpeg" }));
-      setPreviewUrls((prev) => ({ ...prev, [voicePairName]: url }));
+      setPreviewUrls((prev) => ({ ...prev, [voiceSelectionKey]: url }));
       setPreviewState("idle");
     } catch {
       setPreviewState("error");
@@ -214,7 +230,7 @@ export default function Home() {
             const res = await fetch("/api/audio/synthesize-chunk", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ turns: chunks[i], voicePairName }),
+              body: JSON.stringify({ turns: chunks[i], voiceSelection }),
             });
             if (!res.ok) {
               const data = await res.json().catch(() => ({}));
@@ -413,13 +429,60 @@ export default function Home() {
           </div>
           <div>
             <label className="field-label">Host voices</label>
-            <select value={voicePairName} onChange={(e) => setVoicePairName(e.target.value)} disabled={script !== null}>
-              {Object.keys(VOICE_PAIRS).map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
+            <select
+              value={voiceMode}
+              onChange={(e) => setVoiceMode(e.target.value as "multitalker" | "individual")}
+              disabled={script !== null}
+            >
+              <option value="multitalker">Multi-talker pair (smoothest)</option>
+              <option value="individual">Mix your own hosts</option>
             </select>
+
+            {voiceMode === "multitalker" ? (
+              <select
+                value={voicePairName}
+                onChange={(e) => setVoicePairName(e.target.value)}
+                disabled={script !== null}
+                style={{ marginTop: "0.5rem" }}
+              >
+                {Object.keys(MULTI_TALKER_PAIRS).map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                <select
+                  value={host1VoiceId}
+                  onChange={(e) => setHost1VoiceId(e.target.value)}
+                  disabled={script !== null}
+                >
+                  {INDIVIDUAL_VOICE_IDS.map((id) => (
+                    <option key={id} value={id}>
+                      {INDIVIDUAL_VOICES[id].display} — {INDIVIDUAL_VOICES[id].vibe}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={host2VoiceId}
+                  onChange={(e) => setHost2VoiceId(e.target.value)}
+                  disabled={script !== null}
+                >
+                  {INDIVIDUAL_VOICE_IDS.map((id) => (
+                    <option key={id} value={id}>
+                      {INDIVIDUAL_VOICES[id].display} — {INDIVIDUAL_VOICES[id].vibe}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {voiceMode === "individual" && host1VoiceId === host2VoiceId && (
+              <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "0.4rem" }}>
+                ⚠️ Both hosts are using the same voice — still works, but they&apos;ll sound identical.
+              </p>
+            )}
+
             <button
               className="btn"
               onClick={handlePreviewVoice}
@@ -429,9 +492,9 @@ export default function Home() {
             >
               {previewState === "loading" ? "Generating…" : "▶️ Preview voices"}
             </button>
-            {previewUrls[voicePairName] && (
+            {previewUrls[voiceSelectionKey] && (
               // eslint-disable-next-line jsx-a11y/media-has-caption
-              <audio controls src={previewUrls[voicePairName]} style={{ marginTop: "0.5rem" }} />
+              <audio controls src={previewUrls[voiceSelectionKey]} style={{ marginTop: "0.5rem" }} />
             )}
           </div>
         </div>

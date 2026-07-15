@@ -8,9 +8,9 @@
  * <mstts:dialog> elements) with no native dependency at all.
  */
 import "server-only";
-import { buildSsml } from "./ssml";
+import { buildSsmlIndividual, buildSsmlMultiTalker } from "./ssml";
 import type { Turn } from "./types";
-import type { VoicePair } from "./voices";
+import { INDIVIDUAL_VOICES, MULTI_TALKER_PAIRS, type VoiceSelection } from "./voices";
 
 function getSettings() {
   const region = process.env.AZURE_SPEECH_REGION || "eastus";
@@ -21,9 +21,20 @@ function getSettings() {
   return { region, key };
 }
 
-export async function synthesizeChunk(turns: Turn[], pair: VoicePair): Promise<ArrayBuffer> {
+export async function synthesizeChunk(
+  turns: Turn[],
+  selection: VoiceSelection
+): Promise<ArrayBuffer> {
   const { region, key } = getSettings();
-  const ssml = buildSsml(turns, pair);
+  const ssml =
+    selection.mode === "individual"
+      ? buildSsmlIndividual(
+          turns,
+          INDIVIDUAL_VOICES[selection.host1Id].voice,
+          INDIVIDUAL_VOICES[selection.host2Id].voice
+        )
+      : buildSsmlMultiTalker(turns, MULTI_TALKER_PAIRS[selection.pairName]);
+
   const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
   const res = await fetch(url, {
     method: "POST",

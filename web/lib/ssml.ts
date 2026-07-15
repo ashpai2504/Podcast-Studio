@@ -58,7 +58,7 @@ export function chunkTurns(turns: Turn[], maxChars: number = MAX_CHARS_PER_REQUE
   return chunks;
 }
 
-export function buildSsml(turns: Turn[], pair: VoicePair): string {
+export function buildSsmlMultiTalker(turns: Turn[], pair: VoicePair): string {
   const speakerIds: Record<string, string> = { host1: pair.speakers[0], host2: pair.speakers[1] };
   const turnElements = turns
     .map(
@@ -72,6 +72,24 @@ export function buildSsml(turns: Turn[], pair: VoicePair): string {
     `  <voice name='${pair.voice}'>\n` +
     `    <mstts:dialog>\n${turnElements}\n    </mstts:dialog>\n` +
     `  </voice>\n` +
+    `</speak>`
+  );
+}
+
+/** Each turn gets its own <voice> block using that host's individually chosen voice. */
+export function buildSsmlIndividual(
+  turns: Turn[],
+  host1Voice: string,
+  host2Voice: string
+): string {
+  const voiceNames: Record<string, string> = { host1: host1Voice, host2: host2Voice };
+  const voiceElements = turns
+    .map((t) => `  <voice name='${voiceNames[t.speaker]}'>${applyPronunciations(t.text)}</voice>`)
+    .join("\n");
+  return (
+    `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' ` +
+    `xmlns:mstts='https://www.w3.org/2001/mstts' xml:lang='en-US'>\n` +
+    `${voiceElements}\n` +
     `</speak>`
   );
 }

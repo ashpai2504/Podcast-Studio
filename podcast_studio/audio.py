@@ -1,4 +1,13 @@
-"""Turn a dialogue script into podcast audio with Azure Speech multi-talker HD voices."""
+"""Turn a dialogue script into podcast audio with Azure Speech DragonHD voices.
+
+Two ways to pick hosts:
+- Multi-talker pairs: a single special voice model that synthesizes both hosts
+  together, giving the smoothest, most coherent back-and-forth. Only ships as
+  a couple of fixed combinations today.
+- Mix-your-own: any two individual DragonHD voices, each synthesizing their
+  own lines. Full library flexibility, transitions are a touch less seamless
+  since each turn is a separate voice invocation rather than one dialog call.
+"""
 
 import re
 from xml.sax.saxutils import escape
@@ -36,9 +45,10 @@ def _apply_pronunciations(text: str) -> str:
     pieces.append(escape(text[last:]))
     return "".join(pieces)
 
+
 # Multi-talker DragonHD voices synthesize a whole two-person dialogue in one call,
 # keeping tone and pacing coherent across speaker transitions.
-VOICE_PAIRS = {
+MULTI_TALKER_PAIRS = {
     "Ava & Andrew": {
         "voice": "en-US-MultiTalker-Ava-Andrew:DragonHDLatestNeural",
         "speakers": ("ava", "andrew"),
@@ -48,6 +58,61 @@ VOICE_PAIRS = {
         "voice": "en-US-MultiTalker-Ava-Steffan:DragonHDLatestNeural",
         "speakers": ("ava", "steffan"),
         "display": ("Ava", "Steffan"),
+    },
+}
+
+# A curated library of standalone DragonHD voices for "mix your own hosts" -
+# pick any two, including two of the same gender. Vibe descriptions are our
+# own framing to help with picking, not official Microsoft copy - preview
+# them before committing.
+INDIVIDUAL_VOICES = {
+    "andrew3": {
+        "voice": "en-us-Andrew3:DragonHDLatestNeural",
+        "display": "Andrew",
+        "gender": "Male",
+        "vibe": "Podcast-tuned, easygoing",
+    },
+    "ava3": {
+        "voice": "en-us-Ava3:DragonHDLatestNeural",
+        "display": "Ava",
+        "gender": "Female",
+        "vibe": "Podcast-tuned, curious",
+    },
+    "davis": {
+        "voice": "en-us-Davis:DragonHDLatestNeural",
+        "display": "Davis",
+        "gender": "Male",
+        "vibe": "Laid-back, dry humor",
+    },
+    "nova": {
+        "voice": "en-us-Nova:DragonHDLatestNeural",
+        "display": "Nova",
+        "gender": "Female",
+        "vibe": "Sharp, witty",
+    },
+    "brian": {
+        "voice": "en-us-Brian:DragonHDLatestNeural",
+        "display": "Brian",
+        "gender": "Male",
+        "vibe": "Confident, upbeat",
+    },
+    "jenny": {
+        "voice": "en-us-Jenny:DragonHDLatestNeural",
+        "display": "Jenny",
+        "gender": "Female",
+        "vibe": "Warm, friendly",
+    },
+    "adam": {
+        "voice": "en-us-Adam:DragonHDLatestNeural",
+        "display": "Adam",
+        "gender": "Male",
+        "vibe": "Steady, thoughtful",
+    },
+    "serena": {
+        "voice": "en-us-Serena:DragonHDLatestNeural",
+        "display": "Serena",
+        "gender": "Female",
+        "vibe": "Polished, energetic",
     },
 }
 
@@ -65,14 +130,35 @@ def estimate_cost(turns: list[dict]) -> float:
     return chars * NEURAL_HD_PRICE_PER_MILLION_CHARS / 1_000_000
 
 
+def resolve_host_names(voice_selection) -> tuple[str, str]:
+    """Return (host1_name, host2_name) for a multi-talker pair name or an
+    (individual_voice_id, individual_voice_id) tuple."""
+    if isinstance(voice_selection, tuple):
+        host1_id, host2_id = voice_selection
+        return INDIVIDUAL_VOICES[host1_id]["display"], INDIVIDUAL_VOICES[host2_id]["display"]
+    pair = MULTI_TALKER_PAIRS[voice_selection]
+    return pair["display"]
+
+
 def synthesize_podcast(
     settings: Settings,
     turns: list[dict],
-    voice_pair_name: str,
+    voice_selection,
     progress_callback=None,
 ) -> bytes:
-    """Synthesize the full dialogue to MP3 bytes, chunking long scripts across requests."""
-    pair = VOICE_PAIRS[voice_pair_name]
+    """Synthesize the full dialogue to MP3 bytes, chunking long scripts across requests.
+
+    voice_selection is either a MULTI_TALKER_PAIRS key (str) for the smooth
+    dialog voice, or a 2-tuple of INDIVIDUAL_VOICES keys (host1_id, host2_id)
+    for "mix your own hosts".
+    """
+    if isinstance(voice_selection, tuple):
+        host1_voice = INDIVIDUAL_VOICES[voice_selection[0]]["voice"]
+        host2_voice = INDIVIDUAL_VOICES[voice_selection[1]]["voice"]
+        build_ssml = lambda chunk: _build_ssml_individual(chunk, host1_voice, host2_voice)
+    else:
+        pair = MULTI_TALKER_PAIRS[voice_selection]
+        build_ssml = lambda chunk: _build_ssml_multitalker(chunk, pair)
 
     speech_config = speechsdk.SpeechConfig(
         subscription=settings.effective_speech_key, region=settings.speech_region
@@ -95,7 +181,7 @@ def synthesize_podcast(
     for i, chunk in enumerate(chunks):
         if progress_callback:
             progress_callback(i, len(chunks))
-        ssml = _build_ssml(chunk, pair)
+        ssml = build_ssml(chunk)
         last_error = None
         for _attempt in range(MAX_ATTEMPTS_PER_CHUNK):
             # A fresh synthesizer per attempt avoids reusing a stalled connection.
@@ -138,7 +224,7 @@ def _chunk_turns(turns: list[dict]) -> list[list[dict]]:
     return chunks
 
 
-def _build_ssml(turns: list[dict], pair: dict) -> str:
+def _build_ssml_multitalker(turns: list[dict], pair: dict) -> str:
     speaker_ids = {"host1": pair["speakers"][0], "host2": pair["speakers"][1]}
     turn_elements = "\n".join(
         f'      <mstts:turn speaker="{speaker_ids[t["speaker"]]}">{_apply_pronunciations(t["text"])}</mstts:turn>'
@@ -152,5 +238,20 @@ def _build_ssml(turns: list[dict], pair: dict) -> str:
         f"{turn_elements}\n"
         "    </mstts:dialog>\n"
         "  </voice>\n"
+        "</speak>"
+    )
+
+
+def _build_ssml_individual(turns: list[dict], host1_voice: str, host2_voice: str) -> str:
+    """Each turn gets its own <voice> block using that host's individually chosen voice."""
+    voice_names = {"host1": host1_voice, "host2": host2_voice}
+    voice_elements = "\n".join(
+        f'  <voice name=\'{voice_names[t["speaker"]]}\'>{_apply_pronunciations(t["text"])}</voice>'
+        for t in turns
+    )
+    return (
+        "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' "
+        "xmlns:mstts='https://www.w3.org/2001/mstts' xml:lang='en-US'>\n"
+        f"{voice_elements}\n"
         "</speak>"
     )
