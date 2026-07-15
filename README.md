@@ -91,6 +91,22 @@ This app needs a persistent Python process (not serverless functions), so it dep
 > If that turns out to be a dead end, Azure App Service / Container Apps gives full
 > control over the OS image and is the more reliable fallback for this dependency.
 
+## Product knowledge
+
+The sidebar has a **📚 Product knowledge** panel — a standing reference (not
+per-episode) that gets folded into every script prompt, so the model has accurate
+Hunter/FX Luminaire product context instead of guessing. Edit it there (saved to
+`product_knowledge.md`) or edit that file directly; either way it applies to every
+episode generated afterward.
+
+A general guardrail against inventing specs (the exact failure mode that produced
+NotebookLM's wrong "controller flow rate" claim) is always active regardless of
+what's in this file — it's hardcoded in `podcast_studio/script_writer.py`. The file
+is for things that are always true and worth reminding the model of: what a
+product/system actually is, common mix-ups, correct pronunciations, etc. Keep
+entries short and certain — wrong information here is worse than none, since it
+gets treated as fact.
+
 ## Episode length
 
 By default every episode is **20–24 minutes**, scaled to how much substance the source

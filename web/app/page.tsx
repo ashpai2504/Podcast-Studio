@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { extractText } from "@/lib/extract";
 import { computeLengthTarget, mentionsLength, wordCount } from "@/lib/scriptPrompt";
 import { editableTextToTurns, turnsToEditableText } from "@/lib/scriptText";
@@ -15,6 +15,8 @@ import {
 } from "@/lib/voices";
 
 const INDIVIDUAL_VOICE_IDS = Object.keys(INDIVIDUAL_VOICES);
+
+const PRODUCT_KNOWLEDGE_STORAGE_KEY = "hunter-podcast-studio:product-knowledge";
 
 const ACCEPTED_EXTENSIONS = ".pdf,.docx,.pptx,.xlsx,.xlsm,.txt,.md,.csv,.json";
 
@@ -64,6 +66,19 @@ export default function Home() {
   const [host2VoiceId, setHost2VoiceId] = useState(INDIVIDUAL_VOICE_IDS[1]);
   const [previewState, setPreviewState] = useState<"idle" | "loading" | "error">("idle");
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
+  const [productKnowledge, setProductKnowledge] = useState("");
+  const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+
+  // Product knowledge is a standing reference, not per-episode - persist it in
+  // this browser so it survives reloads. (There's no shared server storage in
+  // this serverless deployment; see web/README.md.)
+  useEffect(() => {
+    const saved = window.localStorage.getItem(PRODUCT_KNOWLEDGE_STORAGE_KEY);
+    if (saved) setProductKnowledge(saved);
+  }, []);
+  useEffect(() => {
+    window.localStorage.setItem(PRODUCT_KNOWLEDGE_STORAGE_KEY, productKnowledge);
+  }, [productKnowledge]);
 
   // --- Script ---
   const [script, setScript] = useState<Script | null>(null);
@@ -164,7 +179,14 @@ export default function Home() {
       const draftRes = await fetch("/api/script/draft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sourceText, extraInstructions, targetMinutes, host1Name, host2Name }),
+        body: JSON.stringify({
+          sourceText,
+          extraInstructions,
+          targetMinutes,
+          host1Name,
+          host2Name,
+          productKnowledge,
+        }),
       });
       const draftData = await draftRes.json();
       if (!draftRes.ok) throw new Error(draftData.error || "Script generation failed.");
@@ -190,6 +212,7 @@ export default function Home() {
               host1Name,
               host2Name,
               script: current,
+              productKnowledge,
             }),
           });
           const contData = await contRes.json();
@@ -295,6 +318,47 @@ export default function Home() {
           <span className="badge">FX Luminaire</span>
           <span className="badge">Powered by Azure AI</span>
         </div>
+      </div>
+
+      <div className="card">
+        <button
+          type="button"
+          onClick={() => setKnowledgeOpen((v) => !v)}
+          style={{
+            background: "none",
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            width: "100%",
+            textAlign: "left",
+          }}
+        >
+          <span className="step-label" style={{ margin: 0 }}>
+            📚 Product knowledge
+          </span>
+          <span style={{ marginLeft: "auto", color: "var(--text-muted)" }}>
+            {knowledgeOpen ? "▲" : "▼"}
+          </span>
+        </button>
+        {knowledgeOpen && (
+          <div style={{ marginTop: "0.9rem" }}>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.6rem" }}>
+              Reference facts about Hunter / FX Luminaire products, used to keep every episode
+              accurate — e.g. correcting mix-ups like a controller having a &quot;flow rate.&quot;
+              Applies to every episode generated on this device (saved in this browser only —
+              it isn&apos;t shared across teammates or devices).
+            </p>
+            <textarea
+              rows={6}
+              placeholder="e.g. Centralus is Hunter's central control software for managing irrigation across sites remotely."
+              value={productKnowledge}
+              onChange={(e) => setProductKnowledge(e.target.value)}
+            />
+          </div>
+        )}
       </div>
 
       <div className="stepper">

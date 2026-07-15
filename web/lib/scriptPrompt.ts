@@ -41,6 +41,26 @@ Respond with ONLY a JSON object, no markdown fences, in exactly this shape:
 }
 "speaker" must be exactly "host1" or "host2". host1 opens the show, and the speakers must strictly alternate turn by turn. "text" must contain ONLY the words to be spoken aloud - never restate the speaker's own name as a label inside "text" (e.g. do not write "Ava: Okay Andrew..." - just write "Okay Andrew..."). The "speaker" field alone conveys who is talking; a text-to-speech voice will read "text" verbatim, so a name prefix would be spoken out loud by mistake.`;
 
+export const ANTI_HALLUCINATION_RULE = `Product accuracy rule (important): never state a specific technical specification (flow rate, pressure, voltage, coverage radius, capacity, compatibility, price) about any product unless that exact figure appears explicitly in the source material or the reference product knowledge below. In particular, irrigation controllers do NOT have a "flow rate" - that is a property of valves, sprinkler heads/nozzles, or the water supply, never the controller itself. If you want to mention a product, keep the description general (what it's for, how it's used) rather than inventing numbers or capabilities you are not certain of.`;
+
+/**
+ * Assemble the full system prompt, folding in the admin-maintained product
+ * knowledge reference (if any) so the model has accurate context instead of
+ * guessing at product specifics.
+ */
+export function buildSystemPrompt(productKnowledge: string): string {
+  const parts = [SYSTEM_PROMPT, ANTI_HALLUCINATION_RULE];
+  if (productKnowledge.trim()) {
+    parts.push(
+      "Reference product knowledge (use this to stay accurate about products and " +
+        "terminology - it doesn't override the source material, it fills in general " +
+        "product context the source material may not spell out):\n" +
+        productKnowledge.trim()
+    );
+  }
+  return parts.join("\n\n");
+}
+
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
@@ -98,10 +118,12 @@ export interface DraftParams {
   targetMinutes: number | null;
   host1Name: string;
   host2Name: string;
+  productKnowledge?: string;
 }
 
 export function buildDraftMessages(params: DraftParams): ChatMessage[] {
-  const { sourceText, extraInstructions, targetMinutes, host1Name, host2Name } = params;
+  const { sourceText, extraInstructions, targetMinutes, host1Name, host2Name, productKnowledge = "" } =
+    params;
   const { instruction } = computeLengthTarget(targetMinutes);
   const userParts = [
     "Create a podcast episode script. " + instruction,
@@ -113,7 +135,7 @@ export function buildDraftMessages(params: DraftParams): ChatMessage[] {
   userParts.push("=== SOURCE MATERIAL ===\n" + sourceText.trim());
   userParts.push("Remember: respond with the JSON object only.");
   return [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: buildSystemPrompt(productKnowledge) },
     { role: "user", content: userParts.join("\n\n") },
   ];
 }

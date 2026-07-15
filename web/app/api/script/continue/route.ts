@@ -22,6 +22,7 @@ export async function POST(req: Request) {
       host1Name,
       host2Name,
       script,
+      productKnowledge = "",
     } = body ?? {};
 
     if (!sourceText || !host1Name || !host2Name || !script?.turns?.length) {
@@ -34,6 +35,7 @@ export async function POST(req: Request) {
       targetMinutes,
       host1Name,
       host2Name,
+      productKnowledge,
     });
     const { minWords, maxWords } = computeLengthTarget(targetMinutes);
     const { messages, kept } = buildContinueMessages({ baseMessages, script, minWords, maxWords });

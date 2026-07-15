@@ -11,6 +11,7 @@ import streamlit as st
 from podcast_studio.audio import INDIVIDUAL_VOICES, MULTI_TALKER_PAIRS, synthesize_podcast
 from podcast_studio.config import Settings
 from podcast_studio.extractors import extract_text
+from podcast_studio.knowledge import load_product_knowledge, save_product_knowledge
 from podcast_studio.script_writer import (
     editable_text_to_turns,
     generate_script,
@@ -226,6 +227,26 @@ with st.sidebar:
     if settings.missing_speech():
         st.caption("Voice preview isn't available right now — contact your admin.")
 
+    st.divider()
+    with st.expander("📚 Product knowledge"):
+        st.caption(
+            "Reference facts about Hunter / FX Luminaire products, used to keep every "
+            "episode accurate — e.g. correcting mix-ups like a controller having a "
+            "\"flow rate.\" Applies to every episode until changed. Saved to "
+            "`product_knowledge.md`."
+        )
+        if "product_knowledge" not in st.session_state:
+            st.session_state["product_knowledge"] = load_product_knowledge()
+        st.session_state["product_knowledge"] = st.text_area(
+            "Known product facts",
+            st.session_state["product_knowledge"],
+            height=180,
+            label_visibility="collapsed",
+        )
+        if st.button("💾 Save knowledge", use_container_width=True):
+            save_product_knowledge(st.session_state["product_knowledge"])
+            st.success("Saved — future episodes will use this.")
+
 # --- Progress stepper (rendered after step 1, once source_parts is known) ---
 step2_done = "script_text" in st.session_state
 step3_done = "audio" in st.session_state
@@ -338,6 +359,7 @@ with st.container(border=True):
                         target_minutes=target_minutes,
                         host1_name=host1_name,
                         host2_name=host2_name,
+                        product_knowledge=st.session_state.get("product_knowledge", ""),
                     )
                     st.session_state["episode_title"] = script.get("title", "Sales Update")
                     st.session_state["script_text"] = turns_to_editable_text(

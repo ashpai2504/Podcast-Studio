@@ -89,6 +89,32 @@ is talking; a text-to-speech voice will read "text" verbatim, so a name prefix w
 spoken out loud by mistake.
 """
 
+ANTI_HALLUCINATION_RULE = """\
+Product accuracy rule (important): never state a specific technical specification \
+(flow rate, pressure, voltage, coverage radius, capacity, compatibility, price) about any \
+product unless that exact figure appears explicitly in the source material or the \
+reference product knowledge below. In particular, irrigation controllers do NOT have a \
+"flow rate" - that is a property of valves, sprinkler heads/nozzles, or the water supply, \
+never the controller itself. If you want to mention a product, keep the description \
+general (what it's for, how it's used) rather than inventing numbers or capabilities you \
+are not certain of.\
+"""
+
+
+def build_system_prompt(product_knowledge: str = "") -> str:
+    """Assemble the full system prompt, folding in the admin-maintained product
+    knowledge reference (if any) so the model has accurate context instead of
+    guessing at product specifics."""
+    parts = [SYSTEM_PROMPT, ANTI_HALLUCINATION_RULE]
+    if product_knowledge.strip():
+        parts.append(
+            "Reference product knowledge (use this to stay accurate about products and "
+            "terminology - it doesn't override the source material, it fills in general "
+            "product context the source material may not spell out):\n"
+            + product_knowledge.strip()
+        )
+    return "\n\n".join(parts)
+
 
 def generate_script(
     settings: Settings,
@@ -97,6 +123,7 @@ def generate_script(
     target_minutes: int | None,
     host1_name: str,
     host2_name: str,
+    product_knowledge: str = "",
 ) -> dict:
     """Return {"title": str, "turns": [{"speaker": "host1"|"host2", "text": str}, ...]}.
 
@@ -140,7 +167,7 @@ def generate_script(
     user_parts.append("Remember: respond with the JSON object only.")
 
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": build_system_prompt(product_knowledge)},
         {"role": "user", "content": "\n\n".join(user_parts)},
     ]
     script = _request_script(client, settings, messages)

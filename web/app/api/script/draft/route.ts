@@ -13,6 +13,7 @@ export async function POST(req: Request) {
       targetMinutes = null,
       host1Name,
       host2Name,
+      productKnowledge = "",
     } = body ?? {};
 
     if (!sourceText || !host1Name || !host2Name) {
@@ -25,6 +26,7 @@ export async function POST(req: Request) {
       targetMinutes,
       host1Name,
       host2Name,
+      productKnowledge,
     });
     const raw = await callAzureChat(messages);
     const script = parseScriptJson(raw);

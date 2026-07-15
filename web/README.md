@@ -29,6 +29,11 @@ serverless functions. So this version is architected differently:
 - **Nothing is saved server-side.** Unlike the Streamlit version's `episodes/` folder,
   the finished MP3 only exists as an in-browser Blob until the user clicks download.
   Closing the tab loses it.
+- **Product knowledge is per-browser, not shared.** The "📚 Product knowledge" panel
+  persists to `localStorage` since there's no shared writable storage in this
+  serverless deployment. Each teammate who wants the same reference facts needs to
+  paste them in on their own browser, or this needs a small database (Vercel KV /
+  Upstash) added later if that becomes a real problem.
 - **Very large uploads**: extracted text for all documents combined is resent on every
   script-continuation call. This comfortably handles a large Excel MAR export (~400K
   characters, tested), but an extreme volume of documents at once could approach request
