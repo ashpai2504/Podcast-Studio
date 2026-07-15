@@ -18,30 +18,46 @@ the team. Never add coaching commentary, prescriptive advice, or critique of sal
 unless the source material itself explicitly contains it.
 
 Episode structure:
-1. A short, warm cold-open where the hosts greet listeners and preview the episode.
+1. A short, FUN cold-open with a hook, a bit of banter, or a playful tease of what's coming - \
+not a dry preview list.
 2. A high-level overview segment: light trend insights such as commonly referenced products, \
 repeated activity types (ride-alongs, contractor visits, trainings, distributor meetings), \
-customer segments, or regional patterns.
+customer segments, or regional patterns. Let the hosts react to these trends with genuine \
+curiosity or amusement, not just list them.
 3. The main segment: walk through the field activity, grouped sensibly (by sales owner, \
 region, or theme - whatever the material supports). For each notable activity, cover who \
 the sales owner is, the account, what happened, what was discussed, and any outcomes or \
 next steps. Mention relevant products, training topics, contractor feedback, or distributor \
 engagement when present.
-4. A brief wrap-up where the hosts recap the two or three biggest takeaways and sign off.
+4. A brief wrap-up where the hosts recap the two or three biggest takeaways and sign off - \
+give it a warm, personable send-off rather than a flat summary.
 
 Dialogue style:
-- Sound like a professional, friendly podcast (think NotebookLM) - two colleagues genuinely \
-discussing the material, trading observations, asking each other short questions, and \
-reacting naturally. Not two people reading alternating paragraphs.
-- Keep turns conversational: mostly 1-4 sentences each. Vary the rhythm.
-- Stay factual and grounded in the source material. Do not invent numbers, accounts, names, \
-or outcomes that are not in the documents. If something is unclear in the source, either \
-skip it or phrase it tentatively.
+- This should sound like a genuinely fun, witty podcast - NOT a briefing read aloud. Think \
+two clever friends catching up who happen to know the sales data cold, not two analysts \
+presenting slides.
+- Bring real personality: light humor, playful teasing between the hosts, genuine reactions \
+(surprise, amusement, curiosity), and the occasional witty aside. If something is funny or \
+oddly specific, let the hosts notice - e.g. "Okay, that's the third report this week with a \
+missing battery pad, we might need a bumper sticker for this."
+- Get a little introspective sometimes: don't just report facts back-to-back - have a host \
+wonder aloud about what a pattern MEANS, connect it to the bigger picture, or riff briefly on \
+why something might be happening, before moving on.
+- Let hosts interrupt each other, react mid-thought, and use natural fillers ("Wait, hold on-", \
+"Okay but here's the thing-", "Right, right-"). One host can build on or gently riff off the \
+other's point rather than just waiting their turn.
+- Keep turns conversational and varied in length: mix quick one-line reactions with longer \
+riffs. Vary the rhythm - avoid two people reading alternating paragraphs at each other.
+- Stay factual and grounded in the source material. The humor and personality wrap around \
+real information - they never replace it or invent details, numbers, accounts, or outcomes \
+that are not in the documents. If something is unclear in the source, either skip it or \
+phrase it tentatively.
 - Spell out numbers, acronyms and abbreviations the way a person would say them aloud \
 (e.g. "MAR" as "M-A-R", "Q2" as "second quarter") since this script is fed directly to \
 text-to-speech.
-- Friendly, professional, and efficient tone. A helpful pair of teammates summarizing field \
-activity so sales leaders and teammates can quickly understand what happened.
+- Warm, playful, and a little irreverent - like two witty teammates who genuinely enjoy this, \
+not a formal debrief. Still efficient: listeners should walk away knowing what happened, just \
+enjoying the ride getting there.
 
 Output format:
 Respond with ONLY a JSON object, no markdown fences, in exactly this shape:
@@ -53,7 +69,11 @@ Respond with ONLY a JSON object, no markdown fences, in exactly this shape:
   ]
 }
 "speaker" must be exactly "host1" or "host2". host1 opens the show, and the speakers must \
-strictly alternate turn by turn.
+strictly alternate turn by turn. "text" must contain ONLY the words to be spoken aloud - \
+never restate the speaker's own name as a label inside "text" (e.g. do not write \
+"Ava: Okay Andrew..." - just write "Okay Andrew..."). The "speaker" field alone conveys who \
+is talking; a text-to-speech voice will read "text" verbatim, so a name prefix would be \
+spoken out loud by mistake.
 """
 
 
