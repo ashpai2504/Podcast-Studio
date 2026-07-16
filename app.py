@@ -34,9 +34,15 @@ PREVIEW_LINES = {
 st.set_page_config(page_title="Hunter Podcast Studio", page_icon="🎙️", layout="wide")
 
 # --- Styling ------------------------------------------------------------------
+# Colors pulled straight from hunterirrigation.com's own stylesheet: #00658a is
+# their real header/brand blue, #1b7fa5 their real button blue, #47abd1 their
+# lighter accent, and #a7ca32 the yellow-green they use for active/progress
+# indicators (same UI role as our stepper's "done" state). Font stack mirrors
+# their fallback chain (their primary "Sero" typeface isn't publicly licensed).
 st.markdown(
     """
     <style>
+    * { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
     .block-container { padding-top: 1.5rem; max-width: 1100px; }
     #MainMenu, footer,
     header[data-testid="stHeader"],
@@ -45,19 +51,23 @@ st.markdown(
     div[data-testid="stStatusWidget"] { visibility: hidden; height: 0; }
 
     .hero {
-        background: linear-gradient(120deg, #00552A 0%, #00843D 55%, #22A45D 100%);
-        border-radius: 18px;
-        padding: 2.2rem 2.5rem;
+        background: linear-gradient(135deg, #00516E 0%, #00658A 60%, #1B7FA5 100%);
+        border-radius: 10px;
+        padding: 2rem 2.4rem;
         color: white;
         margin-bottom: 1.4rem;
-        box-shadow: 0 8px 24px rgba(0, 84, 42, .18);
+        box-shadow: 0 4px 14px rgba(0, 81, 110, .25);
     }
-    .hero h1 { color: white; font-size: 2.1rem; margin: 0 0 .4rem 0; }
-    .hero p { color: #E3F2E9; font-size: 1.05rem; margin: 0; max-width: 46rem; }
+    .hero .wordmark {
+        font-size: .8rem; font-weight: 700; letter-spacing: .16em;
+        color: #B7E0EF; text-transform: uppercase; margin-bottom: .5rem;
+    }
+    .hero h1 { color: white; font-size: 2rem; font-weight: 700; margin: 0 0 .4rem 0; }
+    .hero p { color: #DCEFF6; font-size: 1.02rem; margin: 0; max-width: 46rem; }
     .hero .badges { margin-top: .9rem; }
     .hero .badge {
-        display: inline-block; background: rgba(255,255,255,.16);
-        border: 1px solid rgba(255,255,255,.35); border-radius: 999px;
+        display: inline-block; background: rgba(255,255,255,.14);
+        border: 1px solid rgba(255,255,255,.32); border-radius: 4px;
         padding: .18rem .75rem; font-size: .8rem; margin-right: .45rem;
     }
 
@@ -65,65 +75,67 @@ st.markdown(
     .stepper { display: flex; align-items: center; margin: .2rem 0 1.8rem 0; }
     .stepper .step { display: flex; align-items: center; gap: .55rem; }
     .stepper .step .label {
-        font-weight: 600; font-size: .92rem; color: #9AA79E; white-space: nowrap;
+        font-weight: 600; font-size: .92rem; color: #9C9896; white-space: nowrap;
     }
-    .stepper .step.on .label, .stepper .step.done .label { color: #15291C; }
+    .stepper .step.on .label, .stepper .step.done .label { color: #3B3B3B; }
     .stepper .dot {
         width: 1.9rem; height: 1.9rem; border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
         font-size: .88rem; font-weight: 700;
-        background: #EDF3EE; color: #9AA79E; border: 2px solid #EDF3EE;
+        background: #F0EDE9; color: #9C9896; border: 2px solid #F0EDE9;
         transition: all .25s ease;
     }
-    .stepper .step.on .dot { background: white; color: #00843D; border-color: #00843D; }
-    .stepper .step.done .dot { background: #00843D; color: white; border-color: #00843D; }
-    .stepper .line { flex: 1; height: 2px; background: #DCE9E0; margin: 0 .9rem; }
-    .stepper .line.done { background: #00843D; }
+    .stepper .step.on .dot { background: white; color: #1B7FA5; border-color: #1B7FA5; }
+    .stepper .step.done .dot { background: #A7CA32; color: white; border-color: #A7CA32; }
+    .stepper .line { flex: 1; height: 2px; background: #E6E6E7; margin: 0 .9rem; }
+    .stepper .line.done { background: #A7CA32; }
 
     .step-label {
         display: inline-flex; align-items: center; gap: .6rem;
-        font-size: 1.25rem; font-weight: 700; color: #15291C;
+        font-size: 1.2rem; font-weight: 700; color: #3B3B3B;
         margin: .1rem 0 .9rem 0;
     }
     .step-label .num {
-        background: #00843D; color: white; border-radius: 50%;
-        width: 1.7rem; height: 1.7rem; display: inline-flex;
+        background: #00658A; color: white; border-radius: 4px;
+        width: 1.6rem; height: 1.6rem; display: inline-flex;
         align-items: center; justify-content: center;
-        font-size: .95rem; font-weight: 700;
+        font-size: .9rem; font-weight: 700;
     }
 
     .file-chip-row { display: flex; flex-wrap: wrap; gap: .5rem; margin: .7rem 0 .2rem 0; }
     .file-chip {
         display: inline-flex; align-items: center; gap: .4rem;
-        background: #F1F6F2; border: 1px solid #DCE9E0; border-radius: 10px;
-        padding: .35rem .75rem; font-size: .85rem; color: #15291C;
+        background: #F5F4F2; border: 1px solid #E6E6E7; border-radius: 4px;
+        padding: .35rem .75rem; font-size: .85rem; color: #3B3B3B;
     }
 
     .episode-card {
-        background: linear-gradient(135deg, #F6FAF7 0%, #EEF6F0 100%);
-        border: 1px solid #DCE9E0; border-radius: 16px;
+        background: #F5F4F2;
+        border: 1px solid #E6E6E7; border-left: 4px solid #A7CA32; border-radius: 6px;
         padding: 1.3rem 1.6rem; margin-bottom: 1rem;
     }
     .episode-card .eyebrow {
         text-transform: uppercase; letter-spacing: .06em; font-size: .72rem;
-        font-weight: 700; color: #00843D; margin-bottom: .2rem;
+        font-weight: 700; color: #00658A; margin-bottom: .2rem;
     }
-    .episode-card h3 { margin: 0 0 .3rem 0; color: #15291C; }
-    .episode-card .hosts { color: #4C5F52; font-size: .92rem; }
+    .episode-card h3 { margin: 0 0 .3rem 0; color: #3B3B3B; }
+    .episode-card .hosts { color: #6B6B6B; font-size: .92rem; }
 
     div[data-testid="stFileUploader"] section {
-        border: 2px dashed #9CC7AC; border-radius: 14px; background: #F6FAF7;
+        border: 2px dashed #99C3D6; border-radius: 6px; background: #F5FAFC;
     }
     .stButton button[kind="primary"] {
-        border-radius: 10px; padding: .55rem 1.4rem; font-weight: 600;
-        transition: transform .12s ease;
+        background-color: #1B7FA5; border-color: #1B7FA5;
+        border-radius: 4px; padding: .55rem 1.4rem; font-weight: 600;
+        box-shadow: 0 4px 6px rgba(59,59,59,.2);
+        transition: background-color .12s ease;
     }
-    .stButton button[kind="primary"]:hover { transform: translateY(-1px); }
+    .stButton button[kind="primary"]:hover { background-color: #00658A; border-color: #00658A; }
     div[data-testid="stMetric"] {
-        background: #F1F6F2; border: 1px solid #DCE9E0;
-        border-radius: 12px; padding: .7rem .9rem;
+        background: #F5F4F2; border: 1px solid #E6E6E7;
+        border-radius: 6px; padding: .7rem .9rem;
     }
-    div[data-testid="stExpander"] { border-radius: 12px; border-color: #DCE9E0; }
+    div[data-testid="stExpander"] { border-radius: 6px; border-color: #E6E6E7; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -132,7 +144,8 @@ st.markdown(
 st.markdown(
     """
     <div class="hero">
-      <h1>🎙️ Hunter Podcast Studio</h1>
+      <div class="wordmark">Hunter Industries</div>
+      <h1>🎙️ Podcast Studio</h1>
       <p>Turn Marketing Activity Reports and sales documents into a professional
       two-host podcast for the team — upload, review the script, and press play.</p>
       <div class="badges">

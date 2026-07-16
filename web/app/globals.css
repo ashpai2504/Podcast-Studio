@@ -1,12 +1,22 @@
+/*
+ * Colors pulled straight from hunterirrigation.com's own stylesheet: #00658a
+ * is their real header/brand blue, #1b7fa5 their real button blue, #47abd1
+ * their lighter accent, and #a7ca32 the yellow-green they use for
+ * active/progress indicators (same UI role as our stepper's "done" state).
+ * Font stack mirrors their fallback chain (their primary "Sero" typeface
+ * isn't publicly licensed).
+ */
 :root {
-  --green-dark: #00552a;
-  --green: #00843d;
-  --green-light: #22a45d;
-  --bg-soft: #f1f6f2;
-  --border: #dce9e0;
-  --text: #15291c;
-  --text-muted: #4c5f52;
-  --muted-2: #9aa79e;
+  --blue-dark: #00516e;
+  --blue: #00658a;
+  --blue-mid: #1b7fa5;
+  --blue-light: #47abd1;
+  --accent: #a7ca32;
+  --bg-soft: #f5f4f2;
+  --border: #e6e6e7;
+  --text: #3b3b3b;
+  --text-muted: #6b6b6b;
+  --muted-2: #9c9896;
 }
 
 * {
@@ -22,8 +32,7 @@ body {
 body {
   background: #ffffff;
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
-    sans-serif;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 a {
@@ -38,21 +47,30 @@ main {
 
 /* Hero */
 .hero {
-  background: linear-gradient(120deg, var(--green-dark) 0%, var(--green) 55%, var(--green-light) 100%);
-  border-radius: 18px;
-  padding: 2.2rem 2.5rem;
+  background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 60%, var(--blue-mid) 100%);
+  border-radius: 10px;
+  padding: 2rem 2.4rem;
   color: white;
   margin-bottom: 1.4rem;
-  box-shadow: 0 8px 24px rgba(0, 84, 42, 0.18);
+  box-shadow: 0 4px 14px rgba(0, 81, 110, 0.25);
+}
+.hero .wordmark {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: #b7e0ef;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
 }
 .hero h1 {
   color: white;
-  font-size: 2.1rem;
+  font-size: 2rem;
+  font-weight: 700;
   margin: 0 0 0.4rem 0;
 }
 .hero p {
-  color: #e3f2e9;
-  font-size: 1.05rem;
+  color: #dceff6;
+  font-size: 1.02rem;
   margin: 0;
   max-width: 46rem;
 }
@@ -61,12 +79,25 @@ main {
 }
 .hero .badge {
   display: inline-block;
-  background: rgba(255, 255, 255, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 4px;
   padding: 0.18rem 0.75rem;
   font-size: 0.8rem;
   margin-right: 0.45rem;
+}
+
+/* Standing panel (product knowledge) */
+.panel-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
 }
 
 /* Stepper */
@@ -99,20 +130,20 @@ main {
   justify-content: center;
   font-size: 0.88rem;
   font-weight: 700;
-  background: #edf3ee;
+  background: #f0ede9;
   color: var(--muted-2);
-  border: 2px solid #edf3ee;
+  border: 2px solid #f0ede9;
   transition: all 0.25s ease;
 }
 .stepper .step.on .dot {
   background: white;
-  color: var(--green);
-  border-color: var(--green);
+  color: var(--blue-mid);
+  border-color: var(--blue-mid);
 }
 .stepper .step.done .dot {
-  background: var(--green);
+  background: var(--accent);
   color: white;
-  border-color: var(--green);
+  border-color: var(--accent);
 }
 .stepper .line {
   flex: 1;
@@ -121,13 +152,13 @@ main {
   margin: 0 0.9rem;
 }
 .stepper .line.done {
-  background: var(--green);
+  background: var(--accent);
 }
 
 /* Cards */
 .card {
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 8px;
   padding: 1.5rem 1.6rem;
   margin-bottom: 1.4rem;
   background: white;
@@ -136,22 +167,22 @@ main {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: var(--text);
   margin: 0 0 0.9rem 0;
 }
 .step-label .num {
-  background: var(--green);
+  background: var(--blue);
   color: white;
-  border-radius: 50%;
-  width: 1.7rem;
-  height: 1.7rem;
-  min-width: 1.7rem;
+  border-radius: 4px;
+  width: 1.6rem;
+  height: 1.6rem;
+  min-width: 1.6rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 700;
 }
 
@@ -174,15 +205,15 @@ main {
   margin-bottom: -1px;
 }
 .tabs button.active {
-  color: var(--green);
-  border-bottom-color: var(--green);
+  color: var(--blue-mid);
+  border-bottom-color: var(--blue-mid);
 }
 
 /* Dropzone */
 .dropzone {
-  border: 2px dashed #9cc7ac;
-  border-radius: 14px;
-  background: #f6faf7;
+  border: 2px dashed #99c3d6;
+  border-radius: 6px;
+  background: #f5fafc;
   padding: 1.8rem;
   text-align: center;
   color: var(--text-muted);
@@ -190,7 +221,7 @@ main {
   transition: background 0.15s ease;
 }
 .dropzone.drag-over {
-  background: #e9f5ec;
+  background: #e6f2f7;
 }
 .dropzone input {
   display: none;
@@ -209,7 +240,7 @@ main {
   gap: 0.4rem;
   background: var(--bg-soft);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 4px;
   padding: 0.35rem 0.75rem;
   font-size: 0.85rem;
   color: var(--text);
@@ -234,10 +265,11 @@ label.field-label {
 }
 textarea,
 input[type="text"],
+input[type="number"],
 select {
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 4px;
   padding: 0.6rem 0.8rem;
   font-size: 0.92rem;
   font-family: inherit;
@@ -247,14 +279,15 @@ select {
 }
 textarea:focus,
 input[type="text"]:focus,
+input[type="number"]:focus,
 select:focus {
   outline: none;
-  border-color: var(--green);
+  border-color: var(--blue-mid);
 }
 
 /* Buttons */
 .btn {
-  border-radius: 10px;
+  border-radius: 4px;
   padding: 0.6rem 1.4rem;
   font-weight: 600;
   font-size: 0.94rem;
@@ -262,22 +295,24 @@ select:focus {
   background: white;
   color: var(--text);
   cursor: pointer;
-  transition: transform 0.12s ease, background 0.15s ease;
+  transition: background 0.15s ease;
 }
 .btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  background: var(--bg-soft);
 }
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 .btn-primary {
-  background: var(--green);
+  background: var(--blue-mid);
   color: white;
-  border-color: var(--green);
+  border-color: var(--blue-mid);
+  box-shadow: 0 4px 6px rgba(59, 59, 59, 0.2);
 }
 .btn-primary:hover:not(:disabled) {
-  background: var(--green-dark);
+  background: var(--blue);
+  border-color: var(--blue);
 }
 .btn-block {
   width: 100%;
@@ -313,7 +348,7 @@ select:focus {
 .metric {
   background: var(--bg-soft);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 0.7rem 0.9rem;
 }
 .metric .metric-label {
@@ -330,7 +365,7 @@ select:focus {
 .status-box {
   background: var(--bg-soft);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 0.9rem 1.1rem;
   margin: 0.9rem 0;
   font-size: 0.88rem;
@@ -351,15 +386,16 @@ select:focus {
 }
 .progress-fill {
   height: 100%;
-  background: var(--green);
+  background: var(--blue-mid);
   transition: width 0.3s ease;
 }
 
 /* Episode card */
 .episode-card {
-  background: linear-gradient(135deg, #f6faf7 0%, #eef6f0 100%);
+  background: var(--bg-soft);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-left: 4px solid var(--accent);
+  border-radius: 6px;
   padding: 1.3rem 1.6rem;
   margin-bottom: 1rem;
 }
@@ -368,7 +404,7 @@ select:focus {
   letter-spacing: 0.06em;
   font-size: 0.72rem;
   font-weight: 700;
-  color: var(--green);
+  color: var(--blue);
   margin-bottom: 0.2rem;
 }
 .episode-card h3 {
@@ -381,7 +417,7 @@ select:focus {
 }
 
 .alert {
-  border-radius: 10px;
+  border-radius: 4px;
   padding: 0.7rem 1rem;
   font-size: 0.9rem;
   margin: 0.7rem 0;

@@ -308,7 +308,8 @@ export default function Home() {
   return (
     <>
       <div className="hero">
-        <h1>🎙️ Hunter Podcast Studio</h1>
+        <div className="wordmark">Hunter Industries</div>
+        <h1>🎙️ Podcast Studio</h1>
         <p>
           Turn Marketing Activity Reports and sales documents into a professional
           two-host podcast for the team — upload, review the script, and press play.
